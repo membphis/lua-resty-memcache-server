@@ -1,4 +1,4 @@
-# lua-resty-memcached-server
+lua-resty-memcached-server
 ================
 That is a memcached server base on openresty(with nginx-tcp-lua-server patch). Its only support the set/get operation now.
 
