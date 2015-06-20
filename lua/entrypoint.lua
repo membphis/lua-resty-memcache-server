@@ -32,15 +32,21 @@ while true do
 	end
 	local req_data= nil
 
-	local name = command[1] 
+	local name = string.lower(command[1])
 	if "set" == name or "add" == name or "replace" == name then
-		req_data, err = tcpsock:receive(tonumber(command[5]))
-		if not err then
-			tcpsock:receive(2)
+		req_data, err = tcpsock:receive(tonumber(command[5])+2)
+		if err then
+			ngx.log(ngx.WARN, "receive value failed:", err)
+			break
+		end
+
+		if "\r\n" ~= req_data:sub(-2, -1) then
+			ngx.log(ngx.WARN, "receive last is not \\r\\n")
+			break
 		end
 	end
 
-	local rep_data = memcached.call(command[1], command, req_data)
+	local rep_data = memcached.call(name, command, req_data and req_data:sub(1, -3))
 	tcpsock:send(rep_data)
 end
 
