@@ -1,5 +1,18 @@
 local _M = { _VERSION = '1.0' }
-local lru_store = require "lru_store"
+-- alternatively: local lrucache = require "resty.lrucache.pureffi"
+local lrucache = require "resty.lrucache"
+
+-- we need to initialize the cache on the lua module level so that
+-- it can be shared by all the requests served by each nginx worker process:
+local c = nil  -- allow up to 200 items in the cache
+
+local function lur_init(  )
+   c = lrucache.new(20000)  -- allow up to 200 items in the cache
+   if not c then
+       return error("failed to create the cache: " .. (err or "unknown"))
+   end
+end
+lur_init()
 
 function _M.call(fun_name, command, value )
 	if nil == _M[fun_name] then
@@ -29,12 +42,16 @@ function _M.split(str, pat)
 end
 
 function _M.set( command, value )
-   lru_store.set(command[2], value, tonumber(command[4]))
+   local expire = tonumber(command[4])
+   if 0 == expire then
+      expire = nil
+   end
+   c:set(command[2], value, expire)
    return "STORED" .. "\r\n"
 end
 
 function _M.get( command )
-   local value = lru_store.get(command[2])
+   local value = c:get(command[2])
    if value then
       return "VALUE "..command[2].." 0 ".. #value .. "\r\n" .. value .. "\r\n" .. "END" .. "\r\n"
    else
@@ -43,20 +60,18 @@ function _M.get( command )
 end
 
 function _M.flush_all( command )
-   lru_store.flush_all()
+   c = nil
+   lur_init()
    return "OK" .. "\r\n"
 end
 
-function _M.subtract(self, params )
-	if "table" ~= type(params) then
-		return nil, "param check failed"
-	end
+function _M.delete( command )
+   if 2 ~= #command then
+      return "END" .. "\r\n"
+   end
 
-	if 2 == #params then
-		return params[1]-params[2]
-	end
-
-	return nil, "param input valid"
+   c:delete(command[2])
+   return "DELETED" .. "\r\n"
 end
 
 return _M
