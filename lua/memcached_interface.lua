@@ -3,7 +3,7 @@ local lru_store = require "lru_store"
 
 function _M.call(fun_name, command, value )
 	if nil == _M[fun_name] then
-		return nil, "valid function name"
+		return nil, "valid function name("..fun_name.. ")"
 	end
 
 	return _M[fun_name](command, value)
@@ -40,6 +40,11 @@ function _M.get( command )
    else
       return "END" .. "\r\n" 
    end
+end
+
+function _M.flush_all( command )
+   lru_store.flush_all()
+   return "OK" .. "\r\n"
 end
 
 function _M.subtract(self, params )

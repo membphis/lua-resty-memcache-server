@@ -27,7 +27,7 @@ while true do
 	end
 
 	local command = memcached.split(line, " ")
-	if #command < 2 then
+	if #command < 1 then
 		break
 	end
 	local req_data= nil
@@ -46,7 +46,11 @@ while true do
 		end
 	end
 
-	local rep_data = memcached.call(name, command, req_data and req_data:sub(1, -3))
+	local rep_data, err = memcached.call(name, command, req_data and req_data:sub(1, -3))
+	if err then
+		ngx.log(ngx.WARN, "call the function failed: ", err)
+		break
+	end
 	tcpsock:send(rep_data)
 end
 
