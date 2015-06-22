@@ -18,7 +18,7 @@ if not ok then
     ngx.exit(0)
 end
 
-while true do
+while not ngx.worker.exiting() do
 	ngx.log(ngx.WARN, "once")
 	local line, err = tcpsock:receive("*l")
 	if err and "timeout" ~= err then
