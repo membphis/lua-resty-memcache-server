@@ -7,6 +7,10 @@ local lrucache = require "resty.lrucache"
 local c = nil  -- allow up to 200 items in the cache
 
 local function lur_init(  )
+   if c then
+      return 
+   end
+   
    c = lrucache.new(20000)  -- allow up to 200 items in the cache
    if not c then
        return error("failed to create the cache: " .. (err or "unknown"))
@@ -72,6 +76,10 @@ function _M.delete( command )
 
    c:delete(command[2])
    return "DELETED" .. "\r\n"
+end
+
+function _M.version( command )
+   return "VERSION 1.0(base on openresty)".."\r\n"
 end
 
 return _M
