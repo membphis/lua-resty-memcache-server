@@ -15,7 +15,13 @@ Syntax:
 <-- VALUE key1 0 3
 <-- val
 <-- END
-<-- 
+--> hset k f 0 0 2
+--> mm
+<-- STORED
+--> hget k f
+<-- VALUE k f 0 2
+<-- mm
+<-- END
 ```
 
 

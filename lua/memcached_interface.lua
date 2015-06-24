@@ -1,6 +1,7 @@
 local _M = { _VERSION = '1.0' }
 -- alternatively: local lrucache = require "resty.lrucache.pureffi"
 local lrucache = require "resty.lrucache"
+local json = require "cjson"
 
 -- we need to initialize the cache on the lua module level so that
 -- it can be shared by all the requests served by each nginx worker process:
@@ -45,22 +46,47 @@ function _M.split(str, pat)
    return t
 end
 
+-- <command name> <key> <flags> <exptime> <bytes>\r\n
 function _M.set( command, value )
    local expire = tonumber(command[4])
-   if 0 == expire then
-      expire = nil
-   end
+   
    c:set(command[2], value, expire)
    return "STORED" .. "\r\n"
 end
 
 function _M.get( command )
    local value = c:get(command[2])
-   if value then
+   if value and "table" ~= value then
       return "VALUE "..command[2].." 0 ".. #value .. "\r\n" .. value .. "\r\n" .. "END" .. "\r\n"
    else
       return "END" .. "\r\n" 
    end
+end
+
+-- <command name> <key> <field> <bytes>\r\n
+function _M.hset( command, value )
+   local key, field = command[2], command[3]
+
+   local old_value, expire = c:get(key)
+   old_value = old_value or {}
+   old_value[field] = value
+   c:set(key, old_value, expire)
+   return "STORED" .. "\r\n"
+end
+
+function _M.hget( command )
+   local key, field = command[2], command[3]
+   local value_t,expire  = c:get(key)
+   if "table" ~= type(value_t) then
+      return "END" .. "\r\n" 
+   end
+
+   local value = value_t[field]
+   if  value then
+      return "VALUE "..key.." "..field.." "..expire.." ".. #value .. "\r\n" .. value .. "\r\n" .. "END" .. "\r\n"
+   end
+   
+   return "END" .. "\r\n" 
 end
 
 function _M.flush_all( command )

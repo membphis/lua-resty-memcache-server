@@ -33,8 +33,8 @@ while not ngx.worker.exiting() do
 	local req_data= nil
 
 	local name = string.lower(command[1])
-	if "set" == name or "add" == name or "replace" == name then
-		req_data, err = tcpsock:receive(tonumber(command[5])+2)
+	if "set" == name or "add" == name or "replace" == name or "hset" == name then
+		req_data, err = tcpsock:receive(tonumber(command[#command])+2)
 		if err then
 			ngx.log(ngx.WARN, "receive value failed:", err)
 			break
